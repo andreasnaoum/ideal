@@ -6,35 +6,34 @@
 """
 
 import requests
-from Manager import ShopifyManager
+from ShopifyManager import ShopifyManager
 
 
-class ManagerAPI:
+class ShopifyAPI:
 
     def __init__(self):
-        self.api = URLs()
+        self.api = ShopifyAPI.URLs()
 
     class URLs:
         manager = ShopifyManager()
-
         # Endpoints
         products = "products.json"
         products_count = "products/count.json"
 
         def get_products_url(self):
-            return self.manager.get_api_url() + products
+            return self.manager.get_api_url() + self.products
 
         def get_product_url(self, product_id):
             return self.manager.get_api_url() + "products/" + product_id + ".json"
 
         def new_product_url(self):
-            return self.manager.get_api_url() + products
+            return self.manager.get_api_url() + self.products
 
         def update_product_url(self):
-            return self.manager.get_api_url() + products
+            return self.manager.get_api_url() + self.products
 
         def delete_product_url(self):
-            return self.manager.get_api_url() + products
+            return self.manager.get_api_url() + self.products
 
     def get_products_list(self):
         return
@@ -58,5 +57,5 @@ class ManagerAPI:
 
 
 if __name__ == '__main__':
-    manager = ManagerAPI()
+    manager = ShopifyAPI()
     print(manager.get_product('8510061379918'))
