@@ -73,6 +73,26 @@ class AliExpressProductFetcher:
             discount = 'Not available'
         return discount
 
+    def get_shipping(self):
+        try:
+            shipping = self.driver.find_element(By.XPATH, "//span/strong[text()='Free Shipping']").text
+            shipping = 'Free'
+        except Exception as e:
+            try:
+                shipping = self.driver.find_element(By.XPATH, "//span/strong[contains(text(), 'Shipping')]").text
+                shipping_partitions = shipping.partition("Shipping: ")
+                shipping = shipping_partitions[2]
+            except Exception as e:
+                shipping = 'Nan'
+        return shipping
+
+    def get_estimate_shipping_day(self):
+        try:
+            date = self.driver.find_element(By.XPATH, "//div[@class='dynamic-shipping-line dynamic-shipping-contentLayout']/span/span[2]").text
+        except Exception as e:
+            date = 'Not available'
+        return date
+
     # function to extract rating
     def get_rating(self):
         try:
@@ -97,24 +117,8 @@ class AliExpressProductFetcher:
             seller_name = 'Not available'
         return seller_name
 
-    """
-        # wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "switcher-item"))).click()
-        # // a[ @class ='switcher-item' and text()='English']
-        # //a[@class='switcher-item']
-
-        # wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "select-item"))).click()
-        # ship_to_australia_element = self.driver.find_element(By.XPATH,"//li[@class='switcher-item ']//span[@class='language-selector' and text()='" + "English" + "']")
-        # actions.move_to_element(ship_to_australia_element).perform()
-
-        # WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@class, 'switcher-info')]/span[@class='ship-to']/i"))).click()
-        # WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.XPATH,"//a[@class='address-select-trigger']//span[@class='css_flag css_in']//span[@class='shipping-text']"))).click()
-        # WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.XPATH,"//li[@class='address-select-item ']//span[@class='shipping-text' and text()='Afghanistan']"))).click()
-        # print("Country Changed!")
-
-    """
-
     def change_country(self, country):
-        wait = WebDriverWait(self.driver, 2)
+        wait = WebDriverWait(self.driver, 3)
         actions = ActionChains(self.driver)
         try:
             wait.until(
@@ -124,6 +128,7 @@ class AliExpressProductFetcher:
             ).click()
         except:
             pass
+        sleep(1)
         try:
             wait.until(
                 EC.element_to_be_clickable(
@@ -132,17 +137,19 @@ class AliExpressProductFetcher:
             ).click()
         except:
             pass
+        sleep(2)
         wait.until(
             EC.element_to_be_clickable(
                 (By.CLASS_NAME, "ship-to")
             )
         ).click()
-        sleep(2)
+        sleep(1)
         wait.until(
             EC.element_to_be_clickable(
                 (By.CLASS_NAME, "shipping-text")
             )
         ).click()
+        sleep(1)
         ship_to_country_element = self.driver.find_element(
             By.XPATH,
             "//li[@class='address-select-item ']//span[@class='shipping-text' and text()='" + country + "']"
@@ -222,6 +229,8 @@ class AliExpressProductFetcher:
         for market in self.markets:
             heading.append(market + " Sale Price")
             heading.append(market + " Discount")
+            heading.append(market + " Shipping")
+            heading.append(market + " Shipping Date Estimation")
         print("Start writing to file")
         with open(file_name, 'w', newline='', encoding='utf-8') as f:
             theWriter = writer(f)
@@ -244,9 +253,21 @@ class AliExpressProductFetcher:
                 print('Product: ', url, ' for country: ', market, ' is fetching now.')
                 sleep(2)
                 self.change_country(market)
-                sleep(2)
+                sleep(5)
                 current_record[market + "_sale_price"] = self.get_sale_price()
+                sleep(1)
                 current_record[market + "_discount"] = self.get_discount()
+                sleep(1)
+                current_record[market + "_shipping"] = self.get_shipping()
+                sleep(1)
+                # print("Shipping is ", current_record[market + "_shipping"])
+                if current_record[market + "_shipping"] != "Nan":
+                    current_record[market + "_shipping_day"] = self.get_estimate_shipping_day()
+                    sleep(1)
+                    # print("Shipping is ", current_record[market + "_shipping_day"])
+                else:
+                    current_record[market + "_shipping_day"] = "Nan"
+
             with open(file_name, 'a', newline='', encoding='utf-8') as f:
                 theWriter = writer(f)
                 row = [
@@ -259,6 +280,8 @@ class AliExpressProductFetcher:
                 for market in self.markets:
                     row.append(current_record[market + "_sale_price"])
                     row.append(current_record[market + "_discount"])
+                    row.append(current_record[market + "_shipping"])
+                    row.append(current_record[market + "_shipping_day"])
                 theWriter.writerow(row)
             print('Product: ', current_record['product_name'], ' is fetched.')
         # Closing the web browser
@@ -267,6 +290,7 @@ class AliExpressProductFetcher:
 
 
 aliexpress_products_urls_test = [
+    'https://www.aliexpress.com/item/1005005135962246.html',
     'https://www.aliexpress.com/item/1005006032317200.html',
     'https://www.aliexpress.com/item/1005005398972998.html'
     #    'https://www.aliexpress.com/item/1005005204880592.html',
