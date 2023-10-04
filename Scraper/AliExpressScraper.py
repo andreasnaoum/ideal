@@ -159,7 +159,7 @@ class AliExpressProductFetcher:
                 By.XPATH,
                 '//span[@class="select-item"]//a'
             ).text
-            print("Selected language is ", selected_language)
+            # print("Selected language is ", selected_language)
         except Exception as e:
             print("Exception Language ", e)
             selected_language = 'Not available'
@@ -182,15 +182,15 @@ class AliExpressProductFetcher:
                 By.CSS_SELECTOR,
                 'div[data-role="switch-currency"].switcher-currency-c'
             ).text
-            print("Selected currency is ", selected_currency)
+            # print("Selected currency is ", selected_currency)
         except Exception as e:
             selected_currency = "Nan"
-            print("Exception ", e)
+            print("Exception Currency: ", e)
             selected_currency = 'Nan'
         if selected_currency != "EUR ( Euro )":
             wait.until(
                 EC.element_to_be_clickable(
-                    ( By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c')
+                    (By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c')
                 )
             ).click()
             # sleep(2)
@@ -260,7 +260,7 @@ class AliExpressProductFetcher:
                     row.append(current_record[market + "_sale_price"])
                     row.append(current_record[market + "_discount"])
                 theWriter.writerow(row)
-            print('Product: ', current_record['product_name'], ' for country: ', market,' is fetched.')
+            print('Product: ', current_record['product_name'], ' is fetched.')
         # Closing the web browser
         self.driver.quit()
         # return records
