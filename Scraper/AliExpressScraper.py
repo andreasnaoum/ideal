@@ -140,25 +140,22 @@ class AliExpressProductFetcher:
             sleep(1)
             language_element.click()
             sleep(1)
-        # selected_currency = "Nan"
-        # try:
-        #     # //div[@data-role="switch-currency"]
-        #     # selected_currency = self.driver.find_element(By.XPATH, '//div[@data-role="switch-currency"]//span[@class="select-item"]//a').text
-        #     selected_currency = self.driver.find_element(By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c').text
-        #     print("Selected currency is ", selected_currency)
-        # except Exception as e:
-        #     print("Exception ", e)
-        #     selected_currency = 'Not available'
+        selected_currency = "Nan"
+        try:
+            #     # //div[@data-role="switch-currency"]
+            # selected_currency = self.driver.find_element(By.XPATH, '//div[@data-role="switch-currency"]//span[@class="select-item"]//a').text
+            selected_currency = self.driver.find_element(By.CSS_SELECTOR,
+                                                         'div[data-role="switch-currency"].switcher-currency-c').text
+            print("Selected currency is ", selected_currency)
+        except Exception as e:
+            print("Exception ", e)
+            selected_currency = 'Not available'
         # if selected_currency != "EUR ( Euro )":
-        #     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c'))).click()
-        #     sleep(2)
+        #     wait.until(EC.element_to_be_clickable(
+        #         (By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c'))).click()
+        #     sleep(15)
         #     currency_element = self.driver.find_element(By.XPATH, '//li//a[@data-currency="EUR"]//em[text()= " (  Euro  )"]')
-        #     print("Currency element: ", currency_element)
-        #     sleep(10)
-        #     actions.move_to_element(currency_element).perform()
-        #     sleep(10)
         #     wait.until(EC.element_to_be_clickable(currency_element)).click()
-        #     sleep(3)
 
         wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@data-role='save']"))).click()
 
@@ -238,6 +235,7 @@ class AliExpressProductFetcher:
         self.driver.quit()
         return records
 
+
 aliexpress_products_urls_test = [
     'https://www.aliexpress.com/item/1005006032317200.html',
     'https://www.aliexpress.com/item/1005005398972998.html'
@@ -249,7 +247,7 @@ aliexpress_products_urls_test = [
 markets = [
     "Bulgaria",
     "Austria",
-#    "France",
+    #    "France",
     "Belgium",
     "Cyprus",
     "Czech Republic",
@@ -260,18 +258,18 @@ markets = [
     "Greece",
     "Hungary",
     "Ireland",
-#    "Italy",
+    #    "Italy",
     "Latvia",
     "Lithuania",
     "Luxembourg",
     "Malta",
-#    "Netherlands",
+    #    "Netherlands",
     "Poland",
     "Portugal",
     "Romania",
-#    "Slovakia",
+    #    "Slovakia",
     "Slovenia",
-#    "Spain",
+    #    "Spain",
     "Sweden"
 ]
 
