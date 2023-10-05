@@ -16,6 +16,15 @@ from selenium.webdriver.common.action_chains import ActionChains
 from time import sleep
 from datetime import date
 
+"""
+#TODO:
+
+- Change Currency 
+- Get Shipping Cost 
+- Get images
+
+"""
+
 
 class AliExpressProductFetcher:
 
@@ -64,6 +73,26 @@ class AliExpressProductFetcher:
             discount = 'Not available'
         return discount
 
+    def get_shipping(self):
+        try:
+            shipping = self.driver.find_element(By.XPATH, "//span/strong[text()='Free Shipping']").text
+            shipping = 'Free'
+        except Exception as e:
+            try:
+                shipping = self.driver.find_element(By.XPATH, "//span/strong[contains(text(), 'Shipping')]").text
+                shipping_partitions = shipping.partition("Shipping: ")
+                shipping = shipping_partitions[2]
+            except Exception as e:
+                shipping = 'Nan'
+        return shipping
+
+    def get_estimate_shipping_day(self):
+        try:
+            date = self.driver.find_element(By.XPATH, "//div[@class='dynamic-shipping-line dynamic-shipping-contentLayout']/span/span[2]").text
+        except Exception as e:
+            date = 'Not available'
+        return date
+
     # function to extract rating
     def get_rating(self):
         try:
@@ -88,157 +117,180 @@ class AliExpressProductFetcher:
             seller_name = 'Not available'
         return seller_name
 
-    """
-        # wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "switcher-item"))).click()
-        # // a[ @class ='switcher-item' and text()='English']
-        # //a[@class='switcher-item']
-
-        # wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "select-item"))).click()
-        # ship_to_australia_element = self.driver.find_element(By.XPATH,"//li[@class='switcher-item ']//span[@class='language-selector' and text()='" + "English" + "']")
-        # actions.move_to_element(ship_to_australia_element).perform()
-
-        # WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@class, 'switcher-info')]/span[@class='ship-to']/i"))).click()
-        # WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.XPATH,"//a[@class='address-select-trigger']//span[@class='css_flag css_in']//span[@class='shipping-text']"))).click()
-        # WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.XPATH,"//li[@class='address-select-item ']//span[@class='shipping-text' and text()='Afghanistan']"))).click()
-        # print("Country Changed!")
-
-    """
-
     def change_country(self, country):
-        wait = WebDriverWait(self.driver, 2)
+        wait = WebDriverWait(self.driver, 3)
         actions = ActionChains(self.driver)
         try:
-            wait.until(EC.element_to_be_clickable(
-                (By.XPATH, "//div[contains(@style,'display: block')]//img[contains(@src,'TB1')]"))).click()
+            wait.until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//div[contains(@style,'display: block')]//img[contains(@src,'TB1')]")
+                )
+            ).click()
         except:
             pass
+        sleep(1)
         try:
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//img[@class='_24EHh']"))).click()
+            wait.until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//img[@class='_24EHh']")
+                )
+            ).click()
         except:
             pass
-        wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "ship-to"))).click()
-        wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "shipping-text"))).click()
-        ship_to_country_element = self.driver.find_element(By.XPATH,
-                                                           "//li[@class='address-select-item ']//span[@class='shipping-text' and text()='" + country + "']")
-        actions.move_to_element(ship_to_country_element).perform()
+        sleep(2)
+        wait.until(
+            EC.element_to_be_clickable(
+                (By.CLASS_NAME, "ship-to")
+            )
+        ).click()
+        sleep(1)
+        wait.until(
+            EC.element_to_be_clickable(
+                (By.CLASS_NAME, "shipping-text")
+            )
+        ).click()
+        sleep(1)
+        ship_to_country_element = self.driver.find_element(
+            By.XPATH,
+            "//li[@class='address-select-item ']//span[@class='shipping-text' and text()='" + country + "']"
+        )
+        actions.move_to_element(
+            ship_to_country_element
+        ).perform()
         sleep(1)
         ship_to_country_element.click()
         sleep(1)
         selected_language = "Nan"
-
         try:
-            # //div[@class="language-selector"]
-            selected_language = self.driver.find_element(By.XPATH, '//span[@class="select-item"]//a').text
-            print("Selected language is ", selected_language)
+            selected_language = self.driver.find_element(
+                By.XPATH,
+                '//span[@class="select-item"]//a'
+            ).text
+            # print("Selected language is ", selected_language)
         except Exception as e:
             print("Exception Language ", e)
             selected_language = 'Not available'
         if selected_language != "English":
-            wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "language-selector"))).click()
-            language_element = self.driver.find_element(By.XPATH, "//a[text()='English']")
+            wait.until(
+                EC.element_to_be_clickable(
+                    (By.CLASS_NAME, "language-selector")
+                )
+            ).click()
+            language_element = self.driver.find_element(
+                By.XPATH,
+                "//a[text()='English']"
+            )
             actions.move_to_element(language_element).perform()
             sleep(1)
             language_element.click()
             sleep(1)
-        # selected_currency = "Nan"
-        # try:
-        #     # //div[@data-role="switch-currency"]
-        #     # selected_currency = self.driver.find_element(By.XPATH, '//div[@data-role="switch-currency"]//span[@class="select-item"]//a').text
-        #     selected_currency = self.driver.find_element(By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c').text
-        #     print("Selected currency is ", selected_currency)
-        # except Exception as e:
-        #     print("Exception ", e)
-        #     selected_currency = 'Not available'
-        # if selected_currency != "EUR ( Euro )":
-        #     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c'))).click()
-        #     sleep(2)
-        #     currency_element = self.driver.find_element(By.XPATH, '//li//a[@data-currency="EUR"]//em[text()= " (  Euro  )"]')
-        #     print("Currency element: ", currency_element)
-        #     sleep(10)
-        #     actions.move_to_element(currency_element).perform()
-        #     sleep(10)
-        #     wait.until(EC.element_to_be_clickable(currency_element)).click()
-        #     sleep(3)
-
-        wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@data-role='save']"))).click()
+        try:
+            selected_currency = self.driver.find_element(
+                By.CSS_SELECTOR,
+                'div[data-role="switch-currency"].switcher-currency-c'
+            ).text
+            # print("Selected currency is ", selected_currency)
+        except Exception as e:
+            selected_currency = "Nan"
+            print("Exception Currency: ", e)
+            selected_currency = 'Nan'
+        if selected_currency != "EUR ( Euro )":
+            wait.until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c')
+                )
+            ).click()
+            # sleep(2)
+            currency_element = self.driver.find_element(
+                By.XPATH,
+                "//li//a[contains(text(), 'EUR')]"
+            )
+            # sleep(2)
+            self.driver.execute_script(
+                "arguments[0].click()",
+                currency_element
+            )
+        wait.until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//button[@data-role='save']")
+            )
+        ).click()
 
     # https://www.aliexpress.com/item/1005006032317200.html
     def fetch(self):
         file_name = 'iDeal-Products-' + str(date.today()) + '.csv'
         heading = [
-            'product_url',
-            'market',
-            'product_name',
-            'sale_price',
-            'mrp',
-            'discount',
-            'rating',
-            'no_of_reviews',
-            'seller_name'
+            'URL',
+            'Name',
+            'Rating',
+            'No. Reviews',
+            'Seller'
         ]
+        for market in self.markets:
+            heading.append(market + " Sale Price")
+            heading.append(market + " Discount")
+            heading.append(market + " Shipping")
+            heading.append(market + " Shipping Date Estimation")
         print("Start writing to file")
         with open(file_name, 'w', newline='', encoding='utf-8') as f:
             theWriter = writer(f)
             theWriter.writerow(heading)
         # Initializing web driver
-        records = []
+        # records = []
         for url in self.urls:
+            current_record = {}
             self.driver.get(url)
             sleep(2)
-            product_name = self.get_product_name()
-            # sleep(3)
-            rating = self.get_rating()
-            # sleep(3)
-            no_of_reviews = self.get_reviews()
-            # sleep(3)
-            seller_name = self.get_seller()
+            current_record['product_name'] = self.get_product_name()
+            sleep(1)
+            current_record['rating'] = self.get_rating()
+            sleep(1)
+            current_record['no_of_reviews'] = self.get_reviews()
+            sleep(1)
+            current_record['seller_name'] = self.get_seller()
             sleep(1)
             for market in self.markets:
                 print('Product: ', url, ' for country: ', market, ' is fetching now.')
+                sleep(2)
                 self.change_country(market)
+                sleep(5)
+                current_record[market + "_sale_price"] = self.get_sale_price()
                 sleep(1)
-                sale_price = self.get_sale_price()
-                # sleep(3)
-                mrp = self.get_mrp()
-                # sleep(3)
-                discount = self.get_discount()
-                # sleep(3)
-                if mrp == 'Not available':
-                    mrp = sale_price
-                # record = [url, market, product_name, sale_price, mrp, discount, rating, no_of_reviews, seller_name]
-                record = {
-                    'url': url,
-                    'market': market,
-                    'product_name': product_name,
-                    'sale_price': sale_price,
-                    'mrp': mrp,
-                    'discount': discount,
-                    'rating': rating,
-                    'no_of_reviews': no_of_reviews,
-                    'seller_name': seller_name
-                }
-                records.append(record)
-                print('Product: ', record['product_name'], ' for country: ', record['market'], ' is fetched.')
-                print('Product info: ', record)
-                with open(file_name, 'a', newline='', encoding='utf-8') as f:
-                    theWriter = writer(f)
-                    # theWriter.writerow(heading)
-                    row = [
-                        record['url'],
-                        record['market'],
-                        record['product_name'],
-                        record['sale_price'],
-                        record['discount'],
-                        record['rating'],
-                        record['no_of_reviews'],
-                        record['seller_name']
-                    ]
-                    theWriter.writerow(row)
+                current_record[market + "_discount"] = self.get_discount()
+                sleep(1)
+                current_record[market + "_shipping"] = self.get_shipping()
+                sleep(1)
+                # print("Shipping is ", current_record[market + "_shipping"])
+                if current_record[market + "_shipping"] != "Nan":
+                    current_record[market + "_shipping_day"] = self.get_estimate_shipping_day()
+                    sleep(1)
+                    # print("Shipping is ", current_record[market + "_shipping_day"])
+                else:
+                    current_record[market + "_shipping_day"] = "Nan"
+
+            with open(file_name, 'a', newline='', encoding='utf-8') as f:
+                theWriter = writer(f)
+                row = [
+                    url,
+                    current_record['product_name'],
+                    current_record['rating'],
+                    current_record['no_of_reviews'],
+                    current_record['seller_name'],
+                ]
+                for market in self.markets:
+                    row.append(current_record[market + "_sale_price"])
+                    row.append(current_record[market + "_discount"])
+                    row.append(current_record[market + "_shipping"])
+                    row.append(current_record[market + "_shipping_day"])
+                theWriter.writerow(row)
+            print('Product: ', current_record['product_name'], ' is fetched.')
         # Closing the web browser
         self.driver.quit()
-        return records
+        # return records
+
 
 aliexpress_products_urls_test = [
+    'https://www.aliexpress.com/item/1005005135962246.html',
     'https://www.aliexpress.com/item/1005006032317200.html',
     'https://www.aliexpress.com/item/1005005398972998.html'
     #    'https://www.aliexpress.com/item/1005005204880592.html',
@@ -249,7 +301,7 @@ aliexpress_products_urls_test = [
 markets = [
     "Bulgaria",
     "Austria",
-#    "France",
+    #    "France",
     "Belgium",
     "Cyprus",
     "Czech Republic",
@@ -260,24 +312,24 @@ markets = [
     "Greece",
     "Hungary",
     "Ireland",
-#    "Italy",
+    #    "Italy",
     "Latvia",
     "Lithuania",
     "Luxembourg",
     "Malta",
-#    "Netherlands",
+    #    "Netherlands",
     "Poland",
     "Portugal",
     "Romania",
-#    "Slovakia",
+    #    "Slovakia",
     "Slovenia",
-#    "Spain",
+    #    "Spain",
     "Sweden"
 ]
 
 if __name__ == '__main__':
     fetcher = AliExpressProductFetcher(aliexpress_products_urls_test, markets)
-    products_catalogue = fetcher.fetch()
+    fetcher.fetch()
     print("Products are fetched!")
     # print(my_dict)
     # Opening a CSV file
