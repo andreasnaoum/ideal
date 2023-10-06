@@ -1,13 +1,44 @@
 """
- * Author:    Andreas Naoum
+ * Author:    Andreas Naoum, Zinonas Sakkas
  * Created:   30.09.2023
+ * Modified:  06.10.2023
  *
  * (c) Copyright iDeal
 """
 
 import requests
 import json
-from ShopifyManager import ShopifyManager
+from ShopifyManagement.ShopifyManager import ShopifyManager
+import httplib2
+from bs4 import BeautifulSoup
+
+
+def is_valid_aliexpress_link(id):
+    try:
+        # url = 'https://www.aliexpress.com/item/' + str(id) + '.html'
+        url = 'https://www.aliexpress.com/item/11093005336910.html'
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Check for a specific element or message that indicates the absence of a product
+        error_message_element = soup.find('div', {'class': 'item-not-found-image'})
+        if error_message_element:
+            return "No"
+
+        # If no error message is found, assume the page has a product
+        return "Yes"
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching the page: {e}")
+        return "No"
+
+
+def checkID(id):
+    h = httplib2.Http()
+    url = 'https://www.aliexpress.com/item/' + str(id) + '.html'
+    resp = h.request(url, 'HEAD')
+    return "Yes" if (int(resp[0]['status']) < 400) else "No"
+
 
 # TO DO: Error handling, type safety, add methods for other actions
 class ShopifyAPI:
@@ -23,7 +54,7 @@ class ShopifyAPI:
 
         def get_products_url(self):
             return self.manager.get_api_url() + self.products
-        
+
         def get_products_count_url(self):
             return self.manager.get_api_url() + self.products_count
 
@@ -33,37 +64,82 @@ class ShopifyAPI:
         def new_product_url(self):
             return self.manager.get_api_url() + self.products
 
-        def update_product_url(self):
-            return self.manager.get_api_url() + self.products
+        def update_product_url(self, product_id):
+            return self.manager.get_api_url() + "products/" + product_id + ".json"
 
         def delete_product_url(self):
             return self.manager.get_api_url() + self.products
-    
+
     # TESTED, WORKS
     def get_product_count(self):
         request = self.api.get_products_count_url()
-
         # Get result, convert to json, split on "count" key, to get the value
         products_count = requests.get(request).json()["count"]
         return products_count
 
-    # TESTED, WORKS
-    def get_products_list(self):
-        request = self.api.get_products_url()
-        
-        # Get result, convert to json, split on "products" key 
-        products_list = requests.get(request).json()["products"]
+    # TO BE TESTED
+    def get_products_list(
+            self,
+            ids=None,
+            collection_id=None,
+            limit=None,
+            published_status=None,
+            status=None,
+            vendor=None
+    ):
+        url = self.api.get_products_url()
+        need_and = False
+        if ids is not None:
+            symbol = "&" if need_and else "?"
+            url += symbol + "ids=" + ids
+            need_and = True
+        if collection_id is not None:
+            symbol = "&" if need_and else "?"
+            url += symbol + "collection_id=" + collection_id
+            need_and = True
+        if limit is not None:
+            symbol = "&" if need_and else "?"
+            url += symbol + "limit=" + limit
+            need_and = True
+        if published_status is not None:
+            symbol = "&" if need_and else "?"
+            url += symbol + "published_status=" + published_status
+            need_and = True
+        if status is not None:
+            symbol = "&" if need_and else "?"
+            url += symbol + "status" + status
+            need_and = True
+        if vendor is not None:
+            symbol = "&" if need_and else "?"
+            url += symbol + "vendor" + vendor
+        # Get result, convert to json, split on "products" key
+        products_list = requests.get(url).json()["products"]
+        # ["products"]
+        # products_list = requests.post(url, json=body).json()
         return products_list
-    
+
     # TESTED, WORKS
     def get_product_ids(self):
         request = self.api.get_products_url()
         # Get result, convert to json, split on "products" key 
         products_list = requests.get(request).json()["products"]
-        ids=[]
+        ids = []
         for p_id in products_list:
             ids.append(p_id["id"])
         return ids
+
+    def get_product_ids2(self):
+        # request = self.api.get_products_url()
+        # Get result, convert to json, split on "products" key
+        # products_list = requests.get(request).json()["products"]
+        products_list = self.get_products_list(limit='250')
+        ids = set()
+        for product in products_list:
+            for variant in product['options']:
+                ids.add(variant['id'])
+        # for p_id in products_list:
+        #     ids.append(p_id["id"])
+        return list(ids)
 
     # TESTED, WORKS
     def get_product(self, product_id):
@@ -71,7 +147,7 @@ class ShopifyAPI:
         fetch_product = requests.get(request).json()
         print(fetch_product)
         return fetch_product["product"]
-    
+
     # Need model new product to test
     def create_product(self, product):
         request = self.api.new_product_url()
@@ -80,9 +156,18 @@ class ShopifyAPI:
         return new_product
 
     # Need to post
-    def update_product(self, product):
-        request = self.api.update_product_url()
-        updated_product = requests.put(request, product.json()).json()
+    def update_product(self, product_id, variants):
+        request = self.api.update_product_url(product_id)
+        updated_product = {'product': {'id': product_id, 'variants': variants}}
+        print(updated_product)
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        # updated_product = requests.put(request, json=updated_product)
+        try:
+            updated_product = requests.put(request, json=updated_product, headers=headers)
+            updated_product.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            print("Update product: ", product_id, " error: ", err)
+
         return updated_product
 
     # Status change works, need to post it up again
@@ -91,13 +176,13 @@ class ShopifyAPI:
         request = self.api.update_product_url()
 
         product["status"] = "inactive"
-        
+
         with open("sample.json", "w") as outfile:
             json.dump(product, outfile)
 
         updated_product = requests.put(request, product).json()
         return updated_product
-    
+
     # TESTED, WORKS
     def delete_product(self, product_id):
         request = self.api.get_product_url(product_id)
@@ -107,13 +192,30 @@ class ShopifyAPI:
 
 if __name__ == '__main__':
     manager = ShopifyAPI()
-    product = manager.get_product('8442271924558')
+    ids = manager.get_product_ids2()
+    print(is_valid_aliexpress_link(1))
+    # for index, id in enumerate(ids):
+    #     print(index, " id= ", id, " in aliexpress: ", is_valid_aliexpress_link(id))
+
+    # print("Get products: \n", manager.get_product_ids2())
+    # product = manager.get_product('8442271924558')
+    # print("Get products: \n", manager.get_products_list())
+    # id = '8431637397838'
+    # variants = []
+    # variant = {
+    #     'id': '46796162793806',
+    #     'price': 94.99,
+    #     'compare_at_price': 163.99
+    # }
+    # variants.append(variant)
+    # manager.update_product(id, variants)
+    # print("Product Updated")
 
     # product["product"]["id"] = '9442271924558'
     # new_product = manager.create_product(product)
 
     # updated_product = manager.set_inactive_product('8442271924558')
-    
+
     # print(product)
 
     # deleted_product = manager.delete_product('8442271924558')
@@ -127,4 +229,3 @@ if __name__ == '__main__':
     # print(product)
     # print(new_product)
     # print(new_product["status"])
-    

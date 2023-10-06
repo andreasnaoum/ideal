@@ -55,6 +55,11 @@ class Tags(Enum):
     SMART_HOME_KITCHEN = "home-kitchen"
 
 
+class Supplier(Enum):
+    ALIEXPRESS = "aliexpress"
+    GEEKBUYING = "geekbuying"
+
+
 class Product:
     "Represenation of data samles"
 

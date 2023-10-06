@@ -12,4 +12,4 @@ class ShopifyManager:
     API_SECRET = '7166687afd9d38dd9dbb8311eb36cd08'
 
     def get_api_url(self):
-        return 'https://' + self.API_KEY + ":" + self.ADMIN_API_KEY + '@ideal-2676.myshopify.com/admin/api/2022-07/'
+        return 'https://' + self.API_KEY + ":" + self.ADMIN_API_KEY + '@ideal-2676.myshopify.com/admin/api/2023-07/'

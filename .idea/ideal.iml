@@ -7,4 +7,12 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
+  <component name="PyNamespacePackagesService">
+    <option name="namespacePackageFolders">
+      <list>
+        <option value="$MODULE_DIR$/Services" />
+        <option value="$MODULE_DIR$/ShopifyManagement" />
+      </list>
+    </option>
+  </component>
 </module>
