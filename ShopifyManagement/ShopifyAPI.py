@@ -5,32 +5,61 @@
  *
  * (c) Copyright iDeal
 """
+from datetime import date
 
 import requests
 import json
 from ShopifyManagement.ShopifyManager import ShopifyManager
 import httplib2
 from bs4 import BeautifulSoup
+from csv import writer
+
+from requests_html import HTMLSession
+
+
+def render_JS(URL):
+    session = HTMLSession()
+    r = session.get(URL)
+    r.html.render()
+    return r.html.text
 
 
 def is_valid_aliexpress_link(id):
     try:
-        # url = 'https://www.aliexpress.com/item/' + str(id) + '.html'
-        url = 'https://www.aliexpress.com/item/11093005336910.html'
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Check for a specific element or message that indicates the absence of a product
-        error_message_element = soup.find('div', {'class': 'item-not-found-image'})
-        if error_message_element:
+        if id == "None":
             return "No"
+        url = 'https://www.aliexpress.com/item/' + str(id) + '.html'
+        # url = 'https://www.aliexpress.com/item/11093005336910.html'
+        # response = requests.get(url)
+        # response.raise_for_status()  # Raise an HTTPError for bad responses
+        # soup = BeautifulSoup(response.content, "html.parser")
+        #
+        # # Check for a specific element or message that indicates the absence of a product
+        # # find_element = soup.find(string="Related items")
+        # error_message_element = soup.find('div', {'class': 'item-not-found-image'})
+        # if error_message_element:
+        #     return "No"
+        try:
+            response = render_JS(url)
+
+            soup = BeautifulSoup(response, "html.parser")
+
+            # Check for a specific element or message that indicates the absence of a product
+            find_element = soup.find(string="Related items")
+            if find_element:
+                return "Yes"
+            # error_message_element = soup.find('div', {'class': 'item-not-found-image'})
+            # if error_message_element:
+            #     return "No"
+        except Exception as e:
+            print("Error for product ", id)
+            return "Error"
 
         # If no error message is found, assume the page has a product
-        return "Yes"
+        return "No"
     except requests.exceptions.RequestException as e:
         print(f"Error fetching the page: {e}")
-        return "No"
+        return "Error"
 
 
 def checkID(id):
@@ -135,11 +164,31 @@ class ShopifyAPI:
         products_list = self.get_products_list(limit='250')
         ids = set()
         for product in products_list:
-            for variant in product['options']:
-                ids.add(variant['id'])
+            for variant in product['variants']:
+                sku = variant['sku']
+                # print(sku)
+                ids.add(sku)
+
+            # for variant in product['options']:
+            #     ids.add(variant['id'])
         # for p_id in products_list:
         #     ids.append(p_id["id"])
         return list(ids)
+
+    # def get_product_ids2(self):
+    #     # request = self.api.get_products_url()
+    #     # Get result, convert to json, split on "products" key
+    #     # products_list = requests.get(request).json()["products"]
+    #     products_list = self.get_products_list(limit='250')
+    #     products = set()
+    #     for product in products_list:
+    #         name = product['title']
+    #         for variant in product['options']:
+    #             ali_id = variant['id']
+    #             ids.add()
+    #     # for p_id in products_list:
+    #     #     ids.append(p_id["id"])
+    #     return list(ids)
 
     # TESTED, WORKS
     def get_product(self, product_id):
@@ -189,17 +238,38 @@ class ShopifyAPI:
         deleted_product = requests.delete(request).json()
         return deleted_product
 
+    def create_aliexpress_catalogue(self):
+        ids = self.get_product_ids2()
+        file_name = 'iDeal-AliExpress-Products-' + str(date.today()) + '.csv'
+        heading = [
+            'AliExpess ID',
+            'AliExpess Link',
+            'Exist',
+            'URL',
+            'Name'
+        ]
+        with open(file_name, 'w', newline='', encoding='utf-8') as f:
+            theWriter = writer(f)
+            theWriter.writerow(heading)
+            for id in ids:
+                row = [
+                    id,
+                    'https://www.aliexpress.com/item/' + str(id) + '.html'
+                ]
+                theWriter.writerow(row)
+
 
 if __name__ == '__main__':
     manager = ShopifyAPI()
-    ids = manager.get_product_ids2()
-    print(is_valid_aliexpress_link(1))
+    manager.create_aliexpress_catalogue()
+    # ids = manager.get_product_ids2()
+    # print(is_valid_aliexpress_link(1))
     # for index, id in enumerate(ids):
-    #     print(index, " id= ", id, " in aliexpress: ", is_valid_aliexpress_link(id))
+    #      print(index, " id= ", id, " in aliexpress: ", is_valid_aliexpress_link(id))
 
     # print("Get products: \n", manager.get_product_ids2())
     # product = manager.get_product('8442271924558')
-    # print("Get products: \n", manager.get_products_list())
+    # print("Get products: \n", manager.get_products_list(limit='10'))
     # id = '8431637397838'
     # variants = []
     # variant = {
