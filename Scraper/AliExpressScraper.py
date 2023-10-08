@@ -17,6 +17,7 @@ from time import sleep
 from datetime import date
 
 from Scraper.Extractor import AliExpressLinkExtractor
+import logging
 
 """
 #TODO:
@@ -120,171 +121,184 @@ class AliExpressProductFetcher:
             seller_name = 'Not available'
         return seller_name
 
-    def change_country(self, country):
-        wait = WebDriverWait(self.driver, 3)
-        actions = ActionChains(self.driver)
-        try:
-            try:
-                wait.until(
-                    EC.element_to_be_clickable(
-                        (By.XPATH, "//div[contains(@style,'display: block')]//img[contains(@src,'TB1')]")
-                    )
-                ).click()
-            except Exception as e:
-                print("Exception 1")
-                # wait.until(
-                #     EC.element_to_be_clickable(
-                #         (By.CSS_SELECTOR, 'span[class="country-flag-y2023"]')
-                #     )
-                # ).click()
-                pass
-            sleep(1)
-            try:
-                wait.until(
-                    EC.element_to_be_clickable(
-                        (By.XPATH, "//img[@class='_24EHh']")
-                    )
-                ).click()
-            except Exception as e:
-                print("Exception 2")
-                wait.until(
-                    EC.element_to_be_clickable(
-                        (By.CSS_SELECTOR,
-                         'span[class="comet-icon comet-icon-chevrondown32 ship-to--centerIcon--1viVSdj base--chevronIcon--25sHdop"]')
-                    )
-                ).click()
-                pass
-            sleep(2)
-            try:
-                wait.until(
-                    EC.element_to_be_clickable(
-                        (By.CLASS_NAME, "ship-to")
-                    )
-                ).click()
-            except Exception as e:
-                wait.until(
-                    EC.element_to_be_clickable(
-                        (By.CSS_SELECTOR,
-                         'div[class ="select--arrow--1cha40Y"]')
-                    )
-                ).click()
 
-                print("Exception 3")
-                pass
+    def newHeader(self, country, wait):
+        try:
             sleep(1)
-            try:
-                wait.until(
-                    EC.element_to_be_clickable(
-                        (By.CLASS_NAME, "shipping-text")
-                    )
-                ).click()
-                sleep(1)
-                ship_to_country_element = self.driver.find_element(
+            elements = wait.until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div[class="select--arrow--1cha40Y"]'))
+            )
+            elements[0].click()
+            element = self.driver.find_element(
+                By.XPATH,
+                '//div[@class="select--item--32FADYB"]//span[text()="' + country + '"]'
+            )
+            self.driver.execute_script(
+                "arguments[0].click()",
+                element
+            )
+            sleep(1)
+            logging.debug("Country changed!")
+            selected_language_element = self.driver.find_elements(
+                By.XPATH,
+                '//div[@class="select--text--1b85oDo"]//span[text()="English"]'
+            )
+            if selected_language_element:
+                selected_language = selected_language_element[0].text
+            else:
+                selected_language = 'Nan'
+            if selected_language != "English":
+                logging.debug("Its time for language")
+                elements[1].click()
+                logging.debug("Selector pressed ")
+                language_element = self.driver.find_element(
                     By.XPATH,
-                    "//li[@class='address-select-item ']//span[@class='shipping-text' and text()='" + country + "']"
+                    '//div[@class="select--item--32FADYB" and text()="English"]'
                 )
-                actions.move_to_element(
-                    ship_to_country_element
-                ).perform()
-                sleep(1)
-                ship_to_country_element.click()
-                sleep(1)
-                selected_language = "Nan"
-                try:
-                    selected_language = self.driver.find_element(
-                        By.XPATH,
-                        '//span[@class="select-item"]//a'
-                    ).text
-                    # print("Selected language is ", selected_language)
-                except Exception as e:
-                    print("Exception Language ", e)
-                    selected_language = 'Not available'
-                if selected_language != "English":
-                    wait.until(
-                        EC.element_to_be_clickable(
-                            (By.CLASS_NAME, "language-selector")
-                        )
-                    ).click()
-                    language_element = self.driver.find_element(
-                        By.XPATH,
-                        "//a[text()='English']"
-                    )
-                    actions.move_to_element(language_element).perform()
-                    sleep(1)
-                    language_element.click()
-            except Exception as e:
-                # "//div[class='select--item--32FADYB']//span[contains(text(), '" + country + "')]"
-                # "//div[class='select--item--32FADYB' and contains(span[2], " + country + ")]"
-                element = self.driver.find_element(
-                    By.XPATH,
-                    '//div[@class="select--item--32FADYB"]//span[text()="' + country + '"]'
-                )
-                # sleep(1)
+                logging.debug("Element found")
                 self.driver.execute_script(
                     "arguments[0].click()",
-                    element
+                    language_element
                 )
-                selected_language = "Nan"
-                # class="select--arrow--1cha40Y"
-                try:
-                    selected_language = self.driver.find_element(
-                        By.XPATH,
-                        '//span[@class="select-item"]//a'
-                    ).text
-                    # print("Selected language is ", selected_language)
-                except Exception as e:
-                    print("Exception Language ", e)
-                    selected_language = 'Not available'
-                if selected_language != "English":
-                    wait.until(
-                        EC.element_to_be_clickable(
-                            (By.CLASS_NAME, "language-selector")
-                        )
-                    ).click()
-                    language_element = self.driver.find_element(
-                        By.XPATH,
-                        "//a[text()='English']"
-                    )
-                    actions.move_to_element(language_element).perform()
-                    sleep(1)
-                    language_element.click()
-                print("Exception 4")
-                pass
-
-                # sleep(1)
-            try:
-                selected_currency = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    'div[data-role="switch-currency"].switcher-currency-c'
-                ).text
-                # print("Selected currency is ", selected_currency)
-            except Exception as e:
-                selected_currency = "Nan"
-                print("Exception Currency: ", e)
+            logging.debug("Language is selected")
+            sleep(1)
+            selected_currency_element = self.driver.find_elements(
+                By.XPATH,
+                '//div[@class="select--text--1b85oDo"]//span[text()="EUR ( Euro )"]'
+            )
+            if selected_currency_element:
+                logging.debug("Selected currency element exists")
+                selected_currency = "EUR ( Euro )"
+            else:
+                logging.debug("Selected currency element does not exists")
                 selected_currency = 'Nan'
+            logging.debug("Currency is ", selected_currency)
             if selected_currency != "EUR ( Euro )":
-                wait.until(
-                    EC.element_to_be_clickable(
-                        (By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c')
-                    )
-                ).click()
-                # sleep(2)
+                elements[2].click()
                 currency_element = self.driver.find_element(
                     By.XPATH,
-                    "//li//a[contains(text(), 'EUR')]"
+                    '//div[@class="select--item--32FADYB" and text()="EUR ( Euro )"]'
                 )
-                # sleep(2)
                 self.driver.execute_script(
                     "arguments[0].click()",
                     currency_element
                 )
+            logging.debug("Currency is selected")
+            sleep(1)
+            save_button = self.driver.find_element(
+                By.XPATH,
+                '//div[@class="es--saveBtn--w8EuBuy"]'
+            )
+            self.driver.execute_script(
+                "arguments[0].click()",
+                save_button
+            )
+        except Exception as e:
+            logging.error("Error in change country: ", country, ' error: ', str(e))
+            pass
+
+    def oldHeader(self, country, wait, actions):
+        try:
             wait.until(
                 EC.element_to_be_clickable(
-                    (By.XPATH, "//button[@data-role='save']")
+                    (By.XPATH, "//img[@class='_24EHh']")
                 )
             ).click()
+            wait.until(
+                EC.element_to_be_clickable(
+                    (By.CLASS_NAME, "ship-to")
+                )
+            ).click()
+            wait.until(
+                EC.element_to_be_clickable(
+                    (By.CLASS_NAME, "shipping-text")
+                )
+            ).click()
+            sleep(1)
+            ship_to_country_element = self.driver.find_element(
+                By.XPATH,
+                "//li[@class='address-select-item ']//span[@class='shipping-text' and text()='" + country + "']"
+            )
+            actions.move_to_element(
+                ship_to_country_element
+            ).perform()
+            sleep(1)
+            ship_to_country_element.click()
+            sleep(1)
+            selected_language = "Nan"
+            try:
+                selected_language = self.driver.find_element(
+                    By.XPATH,
+                    '//span[@class="select-item"]//a'
+                ).text
+            except Exception as e:
+                print("Exception Language ", e)
+                selected_language = 'Not available'
+            if selected_language != "English":
+                wait.until(
+                    EC.element_to_be_clickable(
+                        (By.CLASS_NAME, "language-selector")
+                    )
+                ).click()
+                language_element = self.driver.find_element(
+                    By.XPATH,
+                    "//a[text()='English']"
+                )
+                actions.move_to_element(language_element).perform()
+                sleep(1)
+                language_element.click()
+                try:
+                    selected_currency = self.driver.find_element(
+                        By.CSS_SELECTOR,
+                        'div[data-role="switch-currency"].switcher-currency-c'
+                    ).text
+                except Exception as e:
+                    selected_currency = "Nan"
+                    logging.error("Exception Currency: ", e)
+                    selected_currency = 'Nan'
+                if selected_currency != "EUR ( Euro )":
+                    wait.until(
+                        EC.element_to_be_clickable(
+                            (By.CSS_SELECTOR, 'div[data-role="switch-currency"].switcher-currency-c')
+                        )
+                    ).click()
+                    currency_element = self.driver.find_element(
+                        By.XPATH,
+                        "//li//a[contains(text(), 'EUR')]"
+                    )
+                    # sleep(2)
+                    self.driver.execute_script(
+                        "arguments[0].click()",
+                        currency_element
+                    )
+                wait.until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, "//button[@data-role='save']")
+                    )
+                ).click()
+                wait.until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, "//button[@data-role='save']")
+                    )
+                ).click()
         except Exception as e:
             print("Error in change country: ", country, ' error: ', str(e))
+            pass
+
+    def change_country(self, country):
+        wait = WebDriverWait(self.driver, 2)
+        actions = ActionChains(self.driver)
+        try:
+            wait.until(
+                EC.element_to_be_clickable(
+                    (
+                        By.CSS_SELECTOR,
+                        'span[class="comet-icon comet-icon-chevrondown32 ship-to--centerIcon--1viVSdj base--chevronIcon--25sHdop"]')
+                    )
+                ).click()
+            self.newHeader(country, wait)
+        except Exception as e:
+            self.oldHeader(country, wait, actions)
 
     # https://www.aliexpress.com/item/1005006032317200.html
     def fetch(self):
@@ -334,7 +348,7 @@ class AliExpressProductFetcher:
                 if current_record[market + "_shipping"] != "Nan":
                     current_record[market + "_shipping_day"] = self.get_estimate_shipping_day()
                     # sleep(1)
-                    # print("Shipping is ", current_record[market + "_shipping_day"])
+                    # logging.debug("Shipping is ", current_record[market + "_shipping_day"])
                 else:
                     current_record[market + "_shipping_day"] = "Nan"
 
